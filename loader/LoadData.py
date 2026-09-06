@@ -63,16 +63,16 @@ def split_in_out(train_label, test_label, cls, cls_type):
         testin_idx = np.zeros(test_label.shape[0])
 
         for i in cls:
-            train_idx = train_idx + (train_label == labels[i]).astype(np.int)
-            testin_idx = testin_idx + (test_label == labels[i]).astype(np.int)
+            train_idx = train_idx + (train_label == labels[i]).astype(int)
+            testin_idx = testin_idx + (test_label == labels[i]).astype(int)
 
     elif cls_type=='abnormal':
         train_idx = np.ones(train_label.shape[0])
         testin_idx = np.ones(test_label.shape[0])
 
         for i in cls:
-            train_idx = train_idx * (train_label != labels[i]).astype(np.int)
-            testin_idx = testin_idx * (test_label != labels[i]).astype(np.int)
+            train_idx = train_idx * (train_label != labels[i]).astype(int)
+            testin_idx = testin_idx * (test_label != labels[i]).astype(int)
 
     train_idx[train_idx > 0] = 1
     testin_idx[testin_idx > 0] = 1

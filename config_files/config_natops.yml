@@ -5,7 +5,7 @@ trainer:
 network:
   - seqNTL
 device:
-  - cuda
+  - cpu
 x_length:
   - 51
 learning_rate:

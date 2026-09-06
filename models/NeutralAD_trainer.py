@@ -21,7 +21,7 @@ import numpy as np
 from utils import compute_pre_recall_f1,format_time
 class NeutralAD_trainer:
 
-    def __init__(self, model, loss_function,device='cuda'):
+    def __init__(self, model, loss_function,device='cpu'):
 
         self.loss_fun = loss_function
         self.device = torch.device(device)
@@ -89,8 +89,10 @@ class NeutralAD_trainer:
 
         early_stopper = early_stopping() if early_stopping is not None else None
 
-        val_auc, val_f1, = -1, -1
-        test_auc, test_f1, test_score = None, None,None
+        val_loss = None
+        valin_loss, valout_loss = None, None
+        val_auc, val_f1, val_ap = -1, -1, -1
+        test_auc, test_f1, test_ap, test_score = None, None, None, None
         score,target = None,None
 
         time_per_epoch = []
@@ -124,7 +126,7 @@ class NeutralAD_trainer:
                 else:
                     print(msg)
 
-        if early_stopper is not None:
+        if early_stopper is not None and early_stopper.best_epoch != -1:
             train_loss, val_loss, val_auc, test_loss, test_auc, test_ap, test_f1, best_epoch,score,target \
                 = early_stopper.get_best_vl_metrics()
             msg = f'Stopping at epoch {best_epoch}, TR loss: {train_loss}, VAL loss: {val_loss}, VAL auc: {val_auc} ,' \
@@ -134,6 +136,8 @@ class NeutralAD_trainer:
                 print(msg)
             else:
                 print(msg)
+        else:
+            val_loss = valin_loss if valin_loss is not None else train_loss
 
         time_per_epoch = torch.tensor(time_per_epoch)
         avg_time_per_epoch = float(time_per_epoch.mean())

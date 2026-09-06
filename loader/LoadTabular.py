@@ -31,7 +31,7 @@ def train_test_split(inliers,outliers):
 def Thyroid_train_test_split(path):
     data = io.loadmat(path+"thyroid.mat")
     samples = data['X']  # 3772
-    labels = ((data['y']).astype(np.int)).reshape(-1)
+    labels = ((data['y']).astype(int)).reshape(-1)
 
     inliers = samples[labels == 0]  # 3679 norm
     outliers = samples[labels == 1]  # 93 anom
@@ -42,7 +42,7 @@ def Thyroid_train_test_split(path):
 def Arrhythmia_train_test_split(path):
     data = io.loadmat(path+"arrhythmia.mat")
     samples = data['X']  # 518
-    labels = ((data['y']).astype(np.int)).reshape(-1)
+    labels = ((data['y']).astype(int)).reshape(-1)
 
     inliers = samples[labels == 0]  # 452 norm
     outliers = samples[labels == 1]  # 66 anom
