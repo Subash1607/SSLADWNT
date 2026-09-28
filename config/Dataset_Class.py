@@ -38,7 +38,7 @@ class characters():
     num_cls =20
 class natops():
     data_name = "natops"
-    num_cls = 3
+    num_cls = 6
 class epilepsy():
     data_name = 'epilepsy'
     num_cls = 4

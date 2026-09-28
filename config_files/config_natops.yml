@@ -11,7 +11,7 @@ x_length:
 learning_rate:
   - 0.001
 training_epochs:
-  - 50
+  - 100
 latent_dim:
   - 64
 enc_hdim:
