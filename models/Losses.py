@@ -23,7 +23,7 @@ class DCL(nn.Module):
     def __init__(self,temperature=0.1):
         super(DCL, self).__init__()
         self.temp = temperature
-    def forward(self,z,eval=False):
+    def forward(self,z,eval=False,weights=None):
         z = F.normalize(z, p=2, dim=-1)
         z_ori = z[:, 0]  # n,z
         z_trans = z[:, 1:]  # n,k-1, z
@@ -39,6 +39,11 @@ class DCL(nn.Module):
         scale = 1 / np.abs(K*np.log(1.0 / K))
 
         loss_tensor = (torch.log(trans_matrix) - torch.log(pos_sim)) * scale
+
+        if weights is not None:
+            # Scale weights so that mean weight across K is 1.0 (matching baseline loss scale)
+            scaled_weights = weights * K if torch.allclose(weights.sum(dim=-1), torch.ones_like(weights.sum(dim=-1)), atol=1e-2) else weights
+            loss_tensor = loss_tensor * scaled_weights
 
         if eval:
             score = loss_tensor.sum(1)

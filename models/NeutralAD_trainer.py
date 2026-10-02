@@ -26,27 +26,40 @@ class NeutralAD_trainer:
         self.loss_fun = loss_function
         self.device = torch.device(device)
         self.model = model.to(self.device)
+        self.last_epoch_weights = None
+        self.weight_history = []
 
     def _train(self,train_loader, optimizer):
 
         self.model.train()
 
         loss_all = 0
+        batch_weights = []
         for data in train_loader:
             try:
                 samples, _ = data
             except:
                 samples = data
 
-            z = self.model(samples)
+            if getattr(self.model, 'adaptive', False):
+                z, scores, weights = self.model(samples, return_weights=True)
+                loss = self.loss_fun(z, weights=weights)
+                batch_weights.append(weights.mean(dim=0).detach().cpu())
+            else:
+                z = self.model(samples)
+                loss = self.loss_fun(z)
 
-            loss = self.loss_fun(z)
             loss_mean = loss.mean()
             optimizer.zero_grad()
             loss_mean.backward()
             optimizer.step()
 
             loss_all += loss.sum()
+
+        if len(batch_weights) > 0:
+            self.last_epoch_weights = torch.stack(batch_weights).mean(dim=0)
+        else:
+            self.last_epoch_weights = None
 
         return loss_all.item()/len(train_loader.dataset)
 
@@ -66,8 +79,12 @@ class NeutralAD_trainer:
                 except:
                     samples = data
                     labels = data.y!=cls
-                z= model(samples)
-                score = self.loss_fun(z,eval=True)
+                if getattr(self.model, 'adaptive', False):
+                    z, scores, weights = model(samples, return_weights=True)
+                    score = self.loss_fun(z, eval=True, weights=weights)
+                else:
+                    z = model(samples)
+                    score = self.loss_fun(z,eval=True)
                 loss_in += score[labels == 0].sum()
                 loss_out += score[labels == 1].sum()
                 target_all.append(labels)
@@ -95,6 +112,7 @@ class NeutralAD_trainer:
         test_auc, test_f1, test_ap, test_score = None, None, None, None
         score,target = None,None
 
+        self.weight_history = []
         time_per_epoch = []
 
         for epoch in range(1, max_epochs+1):
@@ -103,6 +121,9 @@ class NeutralAD_trainer:
             train_loss = self._train(train_loader, optimizer)
             end = time.time() - start
             time_per_epoch.append(end)
+
+            if getattr(self.model, 'adaptive', False) and self.last_epoch_weights is not None:
+                self.weight_history.append(self.last_epoch_weights.tolist())
 
             if scheduler is not None:
                 scheduler.step()
@@ -119,6 +140,9 @@ class NeutralAD_trainer:
 
             if epoch % log_every == 0 or epoch == 1:
                 msg = f'Epoch: {epoch}, TR loss: {train_loss}, VAL loss: {valin_loss,valout_loss}, VL auc: {val_auc} VL ap: {val_ap} VL f1: {val_f1} '
+                if getattr(self.model, 'adaptive', False) and self.last_epoch_weights is not None:
+                    weights_str = " | ".join([f"T{i+1}:{w:.3f}" for i, w in enumerate(self.last_epoch_weights)])
+                    msg += f'\n  Adaptive Weights: [{weights_str}]'
 
                 if logger is not None:
                     logger.log(msg)

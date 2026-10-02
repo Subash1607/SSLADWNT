@@ -62,8 +62,26 @@ class SeqNeutralAD(nn.Module):
         self.trans_type = config['trans_type']
         self.device = config['device']
         self.z_dim = config['latent_dim']
+        self.adaptive = config.get('adaptive', False)
+        if self.adaptive:
+            from .AdaptiveModule import TransformationScorer
+            scorer_hdim = config.get('scorer_hdim', 32)
+            tau_w = config.get('tau_w', 1.0)
+            self.scorer = TransformationScorer(
+                z_dim=self.z_dim,
+                num_trans=self.num_trans,
+                h_dim=scorer_hdim,
+                tau=tau_w
+            ).to(self.device)
+        else:
+            self.scorer = None
 
-    def forward(self,x):
+    def score_transformations(self, zs, verbose=False):
+        if self.scorer is not None:
+            return self.scorer(zs, verbose=verbose)
+        raise ValueError("TransformationScorer is not initialized. Ensure 'adaptive: True' in config.")
+
+    def forward(self, x, return_weights=False):
         x = x.type(torch.FloatTensor).to(self.device)
 
         x_T = torch.empty(x.shape[0],self.num_trans,x.shape[1],x.shape[2]).to(x)
@@ -80,6 +98,10 @@ class SeqNeutralAD(nn.Module):
         x_cat = torch.cat([x.unsqueeze(1),x_T],1)
         zs = self.enc[0](x_cat.reshape(-1,x.shape[1],x.shape[2]))
         zs = zs.reshape(x.shape[0],self.num_trans+1,self.z_dim)
+
+        if return_weights and self.scorer is not None:
+            scores, weights = self.scorer(zs)
+            return zs, scores, weights
 
         return zs
 

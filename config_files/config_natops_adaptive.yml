@@ -57,6 +57,11 @@ num_repeat:
 save_scores:
   - False
 result_folder:
-  - RESULTS/RESULTS_
+  - RESULTS/RESULTS_ADAPTIVE_
+
 adaptive:
-  - False
+  - True
+scorer_hdim:
+  - 32
+tau_w:
+  - 1.0

@@ -110,6 +110,9 @@ class Config:
         # print("attr", name)
         return getattr(self, name)
 
+    def get(self, name, default=None):
+        return getattr(self, name, default)
+
     def __contains__(self, attrname):
         return attrname in self.__dict__
 
